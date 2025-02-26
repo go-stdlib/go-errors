@@ -9,6 +9,7 @@ jobs:
     name: Release
     permissions:
       contents: write
+      issues: write
       packages: write
     runs-on: ubuntu-20.04
     steps:
