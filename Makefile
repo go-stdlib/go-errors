@@ -3,7 +3,7 @@
 .SHELLFLAGS   := -eou pipefail
 
 .PHONY: build
-build: ## Build module.
+build: ## Build package.
 	@go build .
 
 .PHONY: test
