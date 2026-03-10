@@ -8,15 +8,15 @@ import (
 
 // NewGroup creates a new *Group with sane defaults.
 func NewGroup(errs ...error) *Group {
-	eg := &Group{
+	g := &Group{
 		Errors:    make([]Error, 0, len(errs)),
 		Formatter: GroupFormatterDefault,
 	}
-	eg.Append(errs...)
-	return eg
+	g.Append(errs...)
+	return g
 }
 
-// Group stores multiple Canonical instances.
+// Group stores multiple Defined instances.
 //
 // TODO(ahawker) Flatten JSON output to a single error when group only has one.
 type Group struct {
@@ -45,11 +45,11 @@ func (g *Group) Append(errs ...error) {
 			continue
 		}
 
-		// When given an error that isn't Canonical, wrap it.
+		// When given an error that isn't Defined, wrap it.
 		// TODO (ahawker) Might have broke this.
 		var e Error
 		if !errors.As(err, &e) {
-			e = ErrUnknown.Wrap(err)
+			e = ErrUndefined.Wrap(err)
 		}
 
 		if e == nil {
@@ -68,7 +68,7 @@ func (g *Group) Empty() bool {
 	return len(g.Errors) == 0
 }
 
-// ErrorOrNil returns an error interface if this Canonical represents
+// ErrorOrNil returns an error interface if this Defined represents
 // a list of errors, or returns nil if the list of errors is empty. This
 // function is useful at the end of accumulation to make sure that the value
 // returned represents the existence of errors.
@@ -118,7 +118,7 @@ func (g *Group) String() string {
 	return g.Error()
 }
 
-// Canonical string value of the Group struct.
+// Defined string value of the Group struct.
 //
 // Interface: error.
 func (g *Group) Error() string {
@@ -147,14 +147,14 @@ func (g *Group) Swap(i, j int) {
 }
 
 // chain implements the interfaces necessary for errors.Is/As/Unwrap to
-// work in a deterministic way. Is/As/Canonical will work on the error stored
+// work in a deterministic way. Is/As/Defined will work on the error stored
 // in the slice at index zero. Upon an Unwrap call, we will return a chain
 // with a new slice with an index shifted by one.
 //
 // Based on ideas from https://github.com/hashicorp/go-multierror.
 type chain []Error
 
-// Canonical implements the error interface.
+// Defined implements the error interface.
 func (e chain) Error() string {
 	if len(e) == 0 {
 		return ""

@@ -26,17 +26,17 @@ type Code string
 // grouping of errors.
 type Namespace string
 
-// ErrUnknown indicates the wrapped error is not well-known and not previously
+// ErrUndefined indicates the wrapped error is not well-known and not previously
 // defined. This commonly indicates it's coming from an external system/library.
-var ErrUnknown = Canonical{
+var ErrUndefined = Defined{
 	Code:      "unknown",
 	Flags:     FlagUnknown,
 	Message:   "wrapped error is unknown",
 	Namespace: DefaultNamespace,
 }
 
-// Canonical represents a known/defined application error.
-type Canonical struct {
+// Defined represents a known/defined application error.
+type Defined struct {
 	// Code is a machine-readable representation of the error.
 	Code Code `json:"code"`
 	// Extras is an optional struct to store execution context
@@ -58,14 +58,14 @@ type Canonical struct {
 
 // AsGroup returns a Grouper containing this error and all the
 // wrapped errors it contains.
-func (c Canonical) AsGroup() Grouper {
-	g := NewGroup(c)
+func (s Defined) AsGroup() Grouper {
+	g := NewGroup(s)
 
-	err := c
+	err := s
 	for err.Wrapped != nil {
 		g.Append(err.Wrapped)
 
-		var ce Canonical
+		var ce Defined
 		if !errors.As(err.Wrapped, &ce) {
 			break
 		}
@@ -77,142 +77,142 @@ func (c Canonical) AsGroup() Grouper {
 
 // Copy returns a full copy of the error, including copies
 // of all wrapped errors within.
-func (c Canonical) Copy() Error {
-	if c.Wrapped != nil {
-		var wrapped Canonical
+func (s Defined) Copy() Error {
+	if s.Wrapped != nil {
+		var wrapped Defined
 
-		if errors.As(c.Wrapped, &wrapped) {
-			return Canonical{
-				Code:      c.Code,
-				Extras:    c.Extras,
-				Flags:     c.Flags,
-				Message:   c.Message,
-				Namespace: c.Namespace,
+		if errors.As(s.Wrapped, &wrapped) {
+			return Defined{
+				Code:      s.Code,
+				Extras:    s.Extras,
+				Flags:     s.Flags,
+				Message:   s.Message,
+				Namespace: s.Namespace,
 				Wrapped:   wrapped.Copy(),
 			}
 		}
 	}
-	return Canonical{
-		Code:      c.Code,
-		Extras:    c.Extras,
-		Flags:     c.Flags,
-		Message:   c.Message,
-		Namespace: c.Namespace,
-		Wrapped:   c.Wrapped,
+	return Defined{
+		Code:      s.Code,
+		Extras:    s.Extras,
+		Flags:     s.Flags,
+		Message:   s.Message,
+		Namespace: s.Namespace,
+		Wrapped:   s.Wrapped,
 	}
 }
 
 // Equal returns true if the two Errors are equal.
-func (c Canonical) Equal(e Error) bool {
-	var ce Canonical
+func (s Defined) Equal(e Error) bool {
+	var ce Defined
 	if !errors.As(e, &ce) {
 		return false
 	}
-	return c.Code == ce.Code &&
-		c.Message == ce.Message &&
-		c.Namespace == ce.Namespace &&
-		c.Flags == ce.Flags &&
-		reflect.DeepEqual(c.Extras, ce.Extras)
+	return s.Code == ce.Code &&
+		s.Message == ce.Message &&
+		s.Namespace == ce.Namespace &&
+		s.Flags == ce.Flags &&
+		reflect.DeepEqual(s.Extras, ce.Extras)
 }
 
 // Key returns a value that uniquely identifies the type of error.
-func (c Canonical) Key() string {
-	return ErrorKey(c.Namespace, c.Code)
+func (s Defined) Key() string {
+	return ErrorKey(s.Namespace, s.Code)
 }
 
-// IsZero returns true if the Canonical is an empty/zero value.
-func (c Canonical) IsZero() bool {
-	return reflect.DeepEqual(c, new(Canonical))
+// IsZero returns true if the Defined is an empty/zero value.
+func (s Defined) IsZero() bool {
+	return reflect.DeepEqual(s, new(Defined))
 }
 
 // IsRetryable returns true if the error indicates the failed operation
 // is safe to retry.
-func (c Canonical) IsRetryable() bool { return c.Flags.Has(FlagRetryable) }
+func (s Defined) IsRetryable() bool { return s.Flags.Has(FlagRetryable) }
 
 // IsTimeout returns true if the error indicates an operation timeout.
-func (c Canonical) IsTimeout() bool { return c.Flags.Has(FlagTimeout) }
+func (s Defined) IsTimeout() bool { return s.Flags.Has(FlagTimeout) }
 
 // IsTransient returns true if the error indicates the operation failure
 // is transient and a result might be different if tried at another time.
-func (c Canonical) IsTransient() bool { return c.Flags.Has(FlagUnknown) }
+func (s Defined) IsTransient() bool { return s.Flags.Has(FlagUnknown) }
 
 // WithExtras returns a new copy of the error with the extras added.
-func (c Canonical) WithExtras(extras Extras) Error {
-	return Canonical{
-		Code:      c.Code,
+func (s Defined) WithExtras(extras Extras) Error {
+	return Defined{
+		Code:      s.Code,
 		Extras:    extras,
-		Flags:     c.Flags,
-		Message:   c.Message,
-		Namespace: c.Namespace,
-		Wrapped:   c.Wrapped,
+		Flags:     s.Flags,
+		Message:   s.Message,
+		Namespace: s.Namespace,
+		Wrapped:   s.Wrapped,
 	}
 }
 
 // WithFlags returns a new copy of the error with the given attributes applied.
-func (c Canonical) WithFlags(flags Flags) Error {
-	return Canonical{
-		Code:      c.Code,
-		Extras:    c.Extras,
-		Flags:     c.Flags.Set(flags),
-		Message:   c.Message,
-		Namespace: c.Namespace,
-		Wrapped:   c.Wrapped,
+func (s Defined) WithFlags(flags Flags) Error {
+	return Defined{
+		Code:      s.Code,
+		Extras:    s.Extras,
+		Flags:     s.Flags.Set(flags),
+		Message:   s.Message,
+		Namespace: s.Namespace,
+		Wrapped:   s.Wrapped,
 	}
 }
 
 // WithTags returns a new copy of the error with the additional tags added.
-func (c Canonical) WithTags(tags ...string) Error {
-	return Canonical{
-		Code:      c.Code,
-		Extras:    c.Extras.WithTags(tags...),
-		Flags:     c.Flags,
-		Message:   c.Message,
-		Namespace: c.Namespace,
-		Wrapped:   c.Wrapped,
+func (s Defined) WithTags(tags ...string) Error {
+	return Defined{
+		Code:      s.Code,
+		Extras:    s.Extras.WithTags(tags...),
+		Flags:     s.Flags,
+		Message:   s.Message,
+		Namespace: s.Namespace,
+		Wrapped:   s.Wrapped,
 	}
 }
 
-// String returns the Canonical string representation.
+// String returns the Defined string representation.
 //
 // Interface: fmt.Stringer.
-func (c Canonical) String() string {
-	return c.Error()
+func (s Defined) String() string {
+	return s.Error()
 }
 
-// Format returns a complex string representation of the Canonical
+// Format returns a complex string representation of the Defined
 // for the given verbs.
 //
 // Interface: fmt.Formatter.
-func (c Canonical) Format(s fmt.State, verb rune) {
+func (s Defined) Format(st fmt.State, verb rune) {
 	switch verb {
 	case 'v':
-		if s.Flag('+') {
-			if _, err := io.WriteString(s, c.AsGroup().Error()); err != nil {
+		if st.Flag('+') {
+			if _, err := io.WriteString(st, s.AsGroup().Error()); err != nil {
 				panic(err)
 			}
 			return
 		}
 		fallthrough
 	case 's':
-		if _, err := io.WriteString(s, c.Error()); err != nil {
+		if _, err := io.WriteString(st, s.Error()); err != nil {
 			panic(err)
 		}
 	case 'q':
-		if _, err := io.WriteString(s, c.Error()); err != nil {
+		if _, err := io.WriteString(st, s.Error()); err != nil {
 			panic(err)
 		}
 	}
 }
 
-// Canonical returns the string representation of the Canonical.
+// Defined returns the string representation of the Defined.
 //
 // Interface: error.
-func (c Canonical) Error() string {
+func (s Defined) Error() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("[%s:%s] %s", c.Namespace, c.Code, c.Message))
-	if c.Wrapped != nil {
-		sb.WriteString(fmt.Sprintf("\n-> %s", c.Wrapped.Error()))
+	sb.WriteString(fmt.Sprintf("[%s:%s] %s", s.Namespace, s.Code, s.Message))
+	if s.Wrapped != nil {
+		sb.WriteString(fmt.Sprintf("\n-> %s", s.Wrapped.Error()))
 	}
 	return sb.String()
 }
@@ -220,48 +220,48 @@ func (c Canonical) Error() string {
 // Is implements error equality checking.
 //
 // Interface: HasIs.
-func (c Canonical) Is(target error) bool {
-	var err Canonical
+func (s Defined) Is(target error) bool {
+	var err Defined
 	if !errors.As(target, &err) {
 		return false
 	}
-	return c.Equal(err)
+	return s.Equal(err)
 }
 
 // Unwrap implements error unwrapping for nested errors.
 //
 // Interface: Unwrap.
-func (c Canonical) Unwrap() error {
-	return c.Wrapped
+func (s Defined) Unwrap() error {
+	return s.Wrapped
 }
 
 // Wrap returns a new Error with the given err wrapped.
 //
-// If the given err is also an Canonical and the current instance
-// is a zero value, just return a copy of the given Canonical. This
+// If the given err is also an Defined and the current instance
+// is a zero value, just return a copy of the given Defined. This
 // allows us to avoid checking this case at every call-site; we
 // can just Wrap the error and handle it.
-func (c Canonical) Wrap(err error) Error {
+func (s Defined) Wrap(err error) Error {
 	if err == nil {
-		return c
+		return s
 	}
-	if c.IsZero() {
-		var ce Canonical
+	if s.IsZero() {
+		var ce Defined
 		if errors.As(err, &ce) {
 			return ce.Copy()
 		}
 	}
-	return Canonical{
-		Code:      c.Code,
-		Extras:    c.Extras,
-		Flags:     c.Flags,
-		Message:   c.Message,
-		Namespace: c.Namespace,
+	return Defined{
+		Code:      s.Code,
+		Extras:    s.Extras,
+		Flags:     s.Flags,
+		Message:   s.Message,
+		Namespace: s.Namespace,
 		Wrapped:   err,
 	}
 }
 
-// Wrapf returns a new Canonical with an error created by the given format + args.
-func (c Canonical) Wrapf(format string, a ...any) Error {
-	return c.Wrap(fmt.Errorf(format, a...))
+// Wrapf returns a new Defined with an error created by the given format + args.
+func (s Defined) Wrapf(format string, a ...any) Error {
+	return s.Wrap(fmt.Errorf(format, a...))
 }

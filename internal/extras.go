@@ -44,7 +44,7 @@ func (e Extras) WithLinks(links ...string) Extras {
 	}
 }
 
-// WithTags returns a new copy of the Canonical with the additional tags added.
+// WithTags returns a new copy of the Defined with the additional tags added.
 func (e Extras) WithTags(tags ...string) Extras {
 	return Extras{
 		Delay:      e.Delay,

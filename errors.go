@@ -3,11 +3,12 @@ package errors
 import (
 	"errors"
 	"github.com/go-stdlib/go-errors/internal"
+	"io"
 )
 
 // Assertions
 var (
-	_ Error   = (*internal.Canonical)(nil)
+	_ Error   = (*internal.Defined)(nil)
 	_ Grouper = (*internal.Group)(nil)
 )
 
@@ -23,22 +24,54 @@ const (
 	FlagTimeout = internal.FlagTimeout
 )
 
+// Func Aliases
+var (
+	// As is alias for `errors.As`.
+	As = errors.As
+	// Is is alias for `errors.Is`.
+	Is = errors.Is
+	// Unwrap is alias for `errors.Unwrap`.
+	Unwrap = errors.Unwrap
+)
+
 // Type Aliases
 type (
-	Canonical = internal.Canonical
-	Error     = internal.Error
-	Extras    = internal.Extras
-	Flags     = internal.Flags
-	Group     = internal.Group
-	Grouper   = internal.Grouper
+	Defined = internal.Defined
+	Error   = internal.Error
+	Extras  = internal.Extras
+	Flags   = internal.Flags
+	Group   = internal.Group
+	Grouper = internal.Grouper
 )
 
 // Var Aliases
 var (
-	// ErrUnknown indicates the wrapped error is not well-known and not previously
+
+	// ErrUndefined indicates the wrapped error is not well-known and not previously
 	// defined. This commonly indicates it's coming from an external system/library.
-	ErrUnknown = internal.ErrUnknown
+	ErrUndefined = internal.ErrUndefined
 )
+
+// Defer captures errors from calls inside a `defer` using
+// a pointer to an error which may or may not already be allocated.
+func Defer(err *error, errs ...error) {
+	if err == nil {
+		*err = Defined{}
+	}
+	*err = Join(*err, errs...).ErrorOrNil()
+}
+
+// DeferCloser captures errors from an `io.Closer` inside a `defer` using
+// a pointer to an error which may or may not already be allocated.
+func DeferCloser(err *error, closer io.Closer) {
+	Defer(err, closer.Close())
+}
+
+// DeferFn captures errors from a `Close` function inside a `defer` using
+// a pointer to an error which may or may not already be allocated.
+func DeferFn(err *error, fn func() error) {
+	Defer(err, fn())
+}
 
 // Join one or more errors into a group.
 //
